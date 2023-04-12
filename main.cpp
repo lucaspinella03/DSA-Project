@@ -16,18 +16,22 @@ int main(int argc, char*argv[]){
     std::string line;
 
     // Get the numbers to be inserted
-    std::getline(ifs, line);
-    std::stringstream ss(line);
+    while(std::getline(ifs, line)){
+        std::stringstream ss(line);
 
-    int num;
-    // Insert the numbers
-    while(ss >> num){
-        tree.insert(num);
+        std::string ticker;
+        int stock_price;
+        int volatility;
+        // Insert the numbers from the file line
+        ss >> ticker >> stock_price >> volatility;
+        //inserts the data
+        tree.insert(ticker, stock_price, volatility);
+
+        print_tree(&tree, mode, fs);
+        fs << "Tree Height: " << tree.height() << std::endl;
+        fs.close();
     }
 
-    print_tree(&tree, mode, fs);
-    fs << "Tree Height: " << tree.height() << std::endl;
-    fs.close();
 }
 
 /*
