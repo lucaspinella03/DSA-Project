@@ -1,48 +1,55 @@
 #include <iostream>
 #ifndef LAB09_LLRBTREE_H
 #define LAB09_LLRBTREE_H
-class LLRBTNode{
+class StockNode{
 private:
     //remember that every node can be thought of as its own subtree
 
-    //integer inside the node
-    int node_data;
+    StockNode(std::string ticker, int stock_price, int volatility, bool is_red);
+
+//integer inside the node
+    std::string ticker;
+
+    int stock_price;
+
+    int volatility;
     //pointer to left child
-    LLRBTNode* left_node;
+    StockNode* left_node;
     //to right child
-    LLRBTNode* right_node;
+    StockNode* right_node;
 
     bool is_red;
     //connects this class to the BSTree
 
 public:
-    LLRBTNode(int node_data, bool is_red);
-    ~LLRBTNode();
+    StockNode(std::string ticker, double stock_price, double volatility, bool is_red);
+    ~StockNode();
 
     friend class LLRBTree;
 };
 
 class LLRBTree{
 private:
-    LLRBTNode* root_node;
+    StockNode* root_node;
 
     //insert
-    LLRBTNode* insert(LLRBTNode* current, int node_data, bool is_red);
+    //StockNode* current, std::string new_ticker, int new_stock_price, int new_volatility, bool is_red
+    StockNode* insert(StockNode* current, std::string new_ticker, double new_stock_price, double new_volatility, bool is_red);
     //for destructor
-    void clear(LLRBTNode* current);
-    void flipColors(LLRBTNode* current);
-    LLRBTNode* rotateLeft(LLRBTNode* current);
-    LLRBTNode* rotateRight(LLRBTNode* current);
+    void clear(StockNode* current);
+    void flipColors(StockNode* current);
+    StockNode* rotateLeft(StockNode* current);
+    StockNode* rotateRight(StockNode* current);
     //for height function
-    int height(LLRBTNode* current);
+    int height(StockNode* current);
 
     //LLRBTNode* remove( LLRBTNode* root, int node_data);
     //traversal recursion
-    void preorder(LLRBTNode* root, std::ostream& os);
-    void inorder(LLRBTNode* root, std::ostream& os);
-    void postorder(LLRBTNode* root, std::ostream& os);
+    void preorder(StockNode* root, std::ostream& os);
+    void inorder(StockNode* root, std::ostream& os);
+    void postorder(StockNode* root, std::ostream& os);
 
-    bool search(int data, LLRBTNode* root_node);
+    bool search(std::string ticker, StockNode* root_node);
 
 public:
     //constructor
@@ -52,7 +59,7 @@ public:
     //functions
 
     //insert
-    void insert(int node_data);
+    void insert(std::string ticker, double stock_price, double volatility);
     //remove
     //void remove(int node_data);
     //height

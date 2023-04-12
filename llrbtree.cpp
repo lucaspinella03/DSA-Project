@@ -1,17 +1,18 @@
-
 #include "llrbtree.h"
 //constructors
 
 //node constructor
 
-LLRBTNode::LLRBTNode(int node_data, bool is_red){
-    this->node_data = node_data;
+StockNode::StockNode(std::string ticker, double stock_price, double volatility, bool is_red) {
+    this->ticker = ticker;
+    this->stock_price = stock_price;
+    this->volatility = volatility;
     this->left_node = nullptr;
     this->right_node = nullptr;
     this->is_red = is_red;
 }
 //node destructor
-LLRBTNode::~LLRBTNode() {
+StockNode::~StockNode() {
     //before the node deletes we delete the right and left nodes
 }
 //bst constructors
@@ -26,16 +27,15 @@ LLRBTree::~LLRBTree() {
 //functions---------------------------------------
 
 //recursive insert function
-LLRBTNode* LLRBTree::insert(LLRBTNode* current, int num, bool is_red){
-    //todo add condition handling for left rotate, right rotate and color flip
+StockNode* LLRBTree::insert(StockNode* current, std::string new_ticker, double new_stock_price, double new_volatility, bool is_red){
     if(current == nullptr){
-        return new LLRBTNode(num, is_red);
+        return new StockNode(new_ticker, new_stock_price, new_volatility, is_red);
     }
-    else if (num < current->node_data){
-        current->left_node = insert(current->left_node, num, is_red);
+    else if (new_ticker < current->ticker){
+        current->left_node = insert(current->left_node, new_ticker, new_stock_price, new_volatility, is_red);
     }
     else {
-        current->right_node = insert(current->right_node, num, is_red);
+        current->right_node = insert(current->right_node, new_ticker, new_stock_price, new_volatility, is_red);
     }
 
     //If a node has a BLACK LEFT child and a RED RIGHT child, left-rotate the Node & swap colors
@@ -60,14 +60,14 @@ LLRBTNode* LLRBTree::insert(LLRBTNode* current, int num, bool is_red){
 }
 
 //public insert function
-void LLRBTree::insert(int num){
+void LLRBTree::insert(std::string ticker, double stock_price, double volatility){
 
-    this->root_node = this->insert(this->root_node, num, 1);
+    this->root_node = this->insert(this->root_node, ticker, stock_price, volatility, 1);
     this->root_node->is_red = 0;
 }
 
 //recursive destroy function
-void LLRBTree::clear(LLRBTNode* current){
+void LLRBTree::clear(StockNode* current){
     if (current != nullptr) {
         clear(current->left_node);
         clear(current->right_node);
@@ -75,10 +75,10 @@ void LLRBTree::clear(LLRBTNode* current){
     }
 }
 
-LLRBTNode* LLRBTree::rotateLeft(LLRBTNode* current){
+StockNode* LLRBTree::rotateLeft(StockNode* current){
     //make current new root, and black
     //make right red and make it the new current
-    LLRBTNode* temp = current->right_node;
+    StockNode* temp = current->right_node;
     current->right_node = current->right_node->left_node;
     temp->left_node = current;
     temp->is_red = current->is_red;
@@ -86,8 +86,8 @@ LLRBTNode* LLRBTree::rotateLeft(LLRBTNode* current){
     return temp;
 }
 
-LLRBTNode* LLRBTree::rotateRight(LLRBTNode *current) {
-    LLRBTNode* temp = current->left_node;
+StockNode* LLRBTree::rotateRight(StockNode *current) {
+    StockNode* temp = current->left_node;
     current->left_node = current->left_node->right_node;
     temp->right_node = current;
     temp->is_red = current->is_red;
@@ -95,7 +95,7 @@ LLRBTNode* LLRBTree::rotateRight(LLRBTNode *current) {
     return temp;
 }
 //recursively changes colors
-void LLRBTree::flipColors(LLRBTNode *current) {
+void LLRBTree::flipColors(StockNode *current) {
     current->is_red = 1;
     current->left_node->is_red = 0;
     current->right_node->is_red = 0;
@@ -103,38 +103,38 @@ void LLRBTree::flipColors(LLRBTNode *current) {
 
 //private traversal functions
 
-void LLRBTree::preorder(LLRBTNode* root, std::ostream& os){
+void LLRBTree::preorder(StockNode* root, std::ostream& os){
     if(!root){
         return;
     }
 
-    os << root->node_data << ":" << root->is_red << " ";
+    os << root->ticker << ":" << root->is_red << " ";
     this->preorder(root->left_node, os);
     this->preorder(root->right_node, os);
 
     return;
 }
 
-void LLRBTree::inorder(LLRBTNode* root, std::ostream& os){
+void LLRBTree::inorder(StockNode* root, std::ostream& os){
     if(!root){
         return;
     }
 
     this->inorder(root->left_node, os);
-    os << root->node_data << ":" << root->is_red << " ";
+    os << root->ticker << ":" << root->is_red << " ";
     this->inorder(root->right_node, os);
 
     return;
 }
 
-void LLRBTree::postorder(LLRBTNode* root, std::ostream& os){
+void LLRBTree::postorder(StockNode* root, std::ostream& os){
     if(!root){
         return;
     }
 
     this->postorder(root->left_node, os);
     this->postorder(root->right_node, os);
-    os << root->node_data << ":" << root->is_red << " ";
+    os << root->ticker << ":" << root->is_red << " ";
 
     return;
 }
@@ -156,7 +156,7 @@ void LLRBTree::postorder(std::ostream& os){
 }
 
 //height function
-int LLRBTree::height(LLRBTNode* current){
+int LLRBTree::height(StockNode* current){
     if(!current){
         return -1;
     }
