@@ -24,7 +24,12 @@ public:
     explicit LLRBTNode(Stock data);
     ~LLRBTNode();
 
+    Stock* getData();
+    LLRBTNode* getLeft();
+    LLRBTNode* getRight();
+
     friend class LLRBTree;
+    friend class Stock;
 };
 
 // Public versions: accept a single parameter so the usage of the class is neat.
@@ -48,7 +53,7 @@ private:
     void postorder(LLRBTNode* root, std::ostream& os);
 
     void destroy(LLRBTNode* root);
-    Stock* search(Stock data, LLRBTNode* root);
+    Stock* search(std::string data, LLRBTNode* root);
 
 public:
     LLRBTree();
@@ -58,10 +63,13 @@ public:
     void remove(Stock data);
     int height();
 
+    LLRBTNode* getRoot();
+
     void preorder(std::ostream& os = std::cout);
     void inorder(std::ostream& os = std::cout);
     void postorder(std::ostream& os = std::cout);
 
-    bool search(Stock data);
+    Stock* search(std::string data);
+
 
 };

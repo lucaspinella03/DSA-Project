@@ -3,8 +3,9 @@
 //
 
 #include "stock.h"
-
 #include <utility>
+#include <random>
+#include <iostream>
 
 //CONSTRUCTORS
 Stock::Stock(std::string ticker, std::string outstandingShares, double price){
@@ -44,18 +45,71 @@ int Stock::getSupply() const {
 
 // FUNCTIONS
 
-void Stock::buyShares(int num) {
+void Stock::buyShares(int num, int time) {
     this->volume += num;
+    this->timeWhenBought = time;
+    this->timeSinceUpdate = 0;
+
+    std::random_device randomDevice;
+    std::mt19937 randGenerator(randomDevice());
+    std::uniform_int_distribution<> priceChange(1, 9);
+    int limit = int(25*log(std::stod(this->outstandingShares)));
+    int increase = (num - this->supply) / limit;
+    this->supply = (num - this->supply) % limit;
+
+    this->price += double(increase)*(double(priceChange(randGenerator))/100.f);
 
 
 }
 
-void Stock::sellShares(int num) {
+void Stock::sellShares(int num, int time) {
+    this->volume += num;
+    this->timeWhenSold = time;
+    this->timeSinceUpdate = 0;
+
+    std::random_device randomDevice;
+    std::mt19937 randGenerator(randomDevice());
+    std::uniform_int_distribution<> priceChange(1, 9);
+
+    this->supply += num;
+    int increase = supply / int(25*log(std::stod(this->outstandingShares)));
+    this->supply %= int(25*log(std::stod(this->outstandingShares)));
+
+    this->price -= (double(increase)*(double(priceChange(randGenerator))/100));
+
+    if(this->price < 1.00){
+        daysTradingBelow1++;
+        if(this->daysTradingBelow1 == 30 || price <= 0){
+            delisted = true;
+        }
+    } else {
+        daysTradingBelow1 = 0;
+    }
 
 }
 
 Stock::Stock() {
 
+}
+
+int Stock::getBought() {
+    return this->timeWhenBought;
+}
+
+int Stock::getSold() {
+    return this->timeWhenSold;
+}
+
+int Stock::getUpdateTime() {
+    return this->timeSinceUpdate;
+}
+
+void Stock::setUpdateTime(int num) {
+    timeSinceUpdate = num;
+}
+
+int Stock::getDelisted() {
+    return this->delisted;
 }
 
 

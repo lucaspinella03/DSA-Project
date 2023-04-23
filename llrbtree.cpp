@@ -13,6 +13,18 @@ LLRBTNode::LLRBTNode(Stock data){
     this->red = false;
 }
 
+Stock *LLRBTNode::getData() {
+    return &this->data;
+}
+
+LLRBTNode *LLRBTNode::getLeft() {
+    return this->left;
+}
+
+LLRBTNode *LLRBTNode::getRight() {
+    return this->right;
+}
+
 LLRBTNode::~LLRBTNode() = default;
 
 /*
@@ -174,16 +186,16 @@ void LLRBTree::destroy(LLRBTNode* root){
     delete root->right;
 }
 
-Stock* LLRBTree::search(Stock data, LLRBTNode* root){
+Stock* LLRBTree::search(std::string data, LLRBTNode* root){
     if(!root){
         return nullptr;
     }
 
-    if(data.getTicker()  == root->data.getTicker() ){
+    if(data == root->data.getTicker() ){
         return &root->data;
     }
 
-    if(data.getTicker()  < root->data.getTicker() ){
+    if(data < root->data.getTicker() ){
         return this->search(data, root->left);
     }else{
         return this->search(data, root->right);
@@ -232,7 +244,7 @@ void LLRBTree::postorder(std::ostream& os){
     os << "\n";
 }
 
-bool LLRBTree::search(Stock data){
+Stock* LLRBTree::search(std::string data){
     return this->search(data, this->_root);
 }
 
@@ -262,4 +274,8 @@ LLRBTNode *LLRBTree::rotateRight(LLRBTNode *root) {
     p->red = root->red;
     root->red = true;
     return p;
+}
+
+LLRBTNode *LLRBTree::getRoot() {
+    return this->_root;
 }

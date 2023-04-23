@@ -2,15 +2,23 @@
 // Created by aidan on 4/17/2023.
 //
 
+// written in loving memory of Norman (still alive)
+// created the stack library
+
 #include "simulation.h"
+#include "stock.h"
 #include <string>
 #include <vector>
 #include <iostream>
-#include <sstream>
 #include <fstream>
 #include <chrono>
 #include <random>
+#include <cmath>
+#include <stack>
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
+#include <iomanip>
+#include <thread>
 
 Simulation::Simulation() {
 
@@ -52,8 +60,12 @@ Simulation::Simulation() {
     }
 
     this->tickersSize = this->tickers.size();
+    this->totalAmountOfStocks = this->tickers.size();
 
-    this->mainWindow.create(sf::VideoMode(1920, 1080), "SFML Test");
+    this->mainWindow.create(sf::VideoMode(1920, 1080), "Market Simulation");
+    this->offset = 0;
+
+    this->timeSinceStart = -1;
 
     simulation();
 
@@ -71,41 +83,144 @@ void Simulation::simulation() {
     std::uniform_int_distribution<> eventGen(0,4);
     std::uniform_int_distribution<> tickerGen(0, this->tickersSize-1);
     std::uniform_int_distribution<> tradeGen(200, 1000);
+    std::uniform_int_distribution<> coinFlip(0,100);
+    std::uniform_int_distribution<> buyGen;
+    std::uniform_int_distribution<> sellGen;
 
     auto startTime = std::chrono::steady_clock::now();
-    long long int previousTime = -1;
-    int countMinutes = 0;
-    while(true){
+    while(true){ // 30 frames a second
         draw();
         auto time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - startTime);
-
-        if(time.count() != previousTime){
-            previousTime = time.count();
+        if(time.count() != timeSinceStart && delistedStocks != this->totalAmountOfStocks){
+            timeSinceStart = int(time.count());
             int tradeAmount = tradeGen(randGenerator);
+            int buyOdds;
             if(this->event == "bear market"){
-                tradeAmount *= 0.85;
+                tradeAmount = int(std::round(tradeAmount * 0.85));
+                buyOdds = 45;
+                std::uniform_int_distribution<> tempBuyGen(50,800);
+                std::uniform_int_distribution<> tempSellGen(100,5000);
+                buyGen = tempBuyGen;
+                sellGen = tempSellGen;
             } else if (this->event == "bull market") {
-                tradeAmount *= 1.75;
+                tradeAmount = int(std::round(tradeAmount * 1.75));
+                buyOdds = 65;
+                std::uniform_int_distribution<> tempBuyGen(100,4800);
+                std::uniform_int_distribution<> tempSellGen(50,800);
+                buyGen = tempBuyGen;
+                sellGen = tempSellGen;
             } else if (this->event == "recession"){
-                tradeAmount *= 2.05;
+                tradeAmount = int(std::round(tradeAmount * 2.05));
+                buyOdds = 15;
+                std::uniform_int_distribution<> tempBuyGen(50,500);
+                std::uniform_int_distribution<> tempSellGen(400,25000);
+                buyGen = tempBuyGen;
+                sellGen = tempSellGen;
             } else if (this->event == "economic boom"){
-                tradeAmount *= 2.50;
+                tradeAmount = int(std::round(tradeAmount * 2.50));
+                buyOdds = 85;
+                std::uniform_int_distribution<> tempBuyGen(600,30000);
+                std::uniform_int_distribution<> tempSellGen(50,500);
+                buyGen = tempBuyGen;
+                sellGen = tempSellGen;
             } else { // stagnation
-                tradeAmount *= 0.65;
+                tradeAmount = int(std::round(tradeAmount * 0.65));
+                buyOdds = 50;
+                std::uniform_int_distribution<> tempBuyGen(50,2500);
+                std::uniform_int_distribution<> tempSellGen(50,2500);
+                buyGen = tempBuyGen;
+                sellGen = tempSellGen;
             }
-            for(int i = 0; i < tradeAmount; i++){
+            for(int i = 0; i < tradeAmount; i++) {
+                if(delistedStocks == this->totalAmountOfStocks) break;
                 int tickerIndex = tickerGen(randGenerator);
-                std::cout << this->tickers.at(tickerIndex) << " ";
-            }
-            std::cout << std::endl;
-            std::cout << previousTime << std::endl;
-            std::cout << std::endl;
+                Stock *tempStock = this->stockTree.search(this->tickers.at(tickerIndex));
+                bool listed = tempStock->getDelisted();
+                if (!tempStock->getDelisted()) {
+                    int flipResult = coinFlip(randGenerator);
+                    if (flipResult <= buyOdds) {
+                        tempStock->buyShares(buyGen(randGenerator), this->timeSinceStart);
+                    } else {
+                        tempStock->sellShares(sellGen(randGenerator), this->timeSinceStart);
+                    }
 
-            if(previousTime % 60 == 0){ // change event
-                countMinutes++;
-                int eventIndex = eventGen(randGenerator);
+                }
+                if(listed != tempStock->getDelisted()){
+                    this->tickers.erase(this->tickers.begin() + tickerIndex);
+                    this->tickersSize = this->tickers.size();
+                    std::uniform_int_distribution<> tempTickerGen(0, this->tickersSize-1);
+                    tickerGen = tempTickerGen;
+                    this->delistedStocks++;
+                }
+            }
+
+            if(timeSinceStart % 60 == 0){ // change event
+                this->minutesPassed++;
+                int eventIndex = 2; //eventGen(randGenerator);
                 this->event = events[eventIndex];
-                std::cout << events[eventIndex] << std::endl;
+                //std::cout << events[eventIndex] << std::endl;
+
+                if(this->event == "bear market"){
+                    std::thread audioThread([&](){
+                        sf::SoundBuffer bullish;
+                        if (!bullish.loadFromFile("sounds/chaChing.wav")){
+                            exit(-1);
+                        }
+                        bullish.loadFromFile("sounds/chaChing.wav");
+                        sf::Sound sound;
+                        sound.setBuffer(bullish);
+                        sound.play();
+                        while (sound.getStatus() == sf::Sound::Playing)
+                        {
+                            // Wait for the sound to finish playing
+                        }
+                    });
+                } else if (this->event == "bull market"){
+                    std::thread audioThread([&](){
+                        sf::SoundBuffer bullish;
+                        if (!bullish.loadFromFile("sounds/chaChing.wav")){
+                            exit(-1);
+                        }
+                        bullish.loadFromFile("sounds/chaChing.wav");
+                        sf::Sound sound;
+                        sound.setBuffer(bullish);
+                        sound.play();
+                        while (sound.getStatus() == sf::Sound::Playing)
+                        {
+                            // Wait for the sound to finish playing
+                        }
+                    });
+
+                }else if (this->event == "recession"){ //TODO FIX AUDIO
+                    sf::SoundBuffer bullish;
+                    if (!bullish.loadFromFile("sounds/chaChing.wav")){
+                        exit(-1);
+                    }
+                    bullish.loadFromFile("sounds/chaChing.wav");
+                    sf::Sound sound;
+                    sound.setBuffer(bullish);
+                    std::thread audioThread([&](){
+                        sound.play();
+                    });
+                }else if (this->event == "economic boom"){
+                    sf::SoundBuffer bullish;
+                    if (!bullish.loadFromFile("sounds/chaChing.wav")){
+                        exit(-1);
+                    }
+                    bullish.loadFromFile("sounds/chaChing.wav");
+                    sf::Sound sound;
+                    sound.setBuffer(bullish);
+                    sound.play();
+                } else { //stagnation
+                    sf::SoundBuffer bullish;
+                    if (!bullish.loadFromFile("sounds/chaChing.wav")){
+                        exit(-1);
+                    }
+                    bullish.loadFromFile("sounds/chaChing.wav");
+                    sf::Sound sound;
+                    sound.setBuffer(bullish);
+                    sound.play();
+                }
 
 
 
@@ -117,19 +232,132 @@ void Simulation::simulation() {
 }
 
 void Simulation::draw() {
-    sf::Event eventTest{};
-
-    for(int i = 0; i < this->tickersSize; i++){
-        sf::Text tempText;
-        tempText.setFont()
-    }
-
-    while(this->mainWindow.pollEvent(eventTest)){
-        if(eventTest.type == sf::Event::Closed){
-            this->mainWindow.close();
-        }
-    }
-
     this->mainWindow.clear();
+    sf::Event windowEvent{};
+    sf::Font font;
+    font.loadFromFile("IBMPlexMono-Regular.ttf"); //AOTFShinGoProBold.otf RobotoMono-VariableFont_wght.ttf IBMPlexMono-Regular.ttf
+    sf::Text tempText;
+    tempText.setFont(font);
+    tempText.setFillColor(sf::Color::White);
+    tempText.setCharacterSize(15);
+    //tempText.setStyle(sf::Text::Bold);
+
+    std::stack<LLRBTNode*> stack;
+    //stack.push(this->stockTree.getRoot());
+
+    int x = -1;
+    int y = 10;
+    int i = 0;
+
+    LLRBTNode* tempNode = this->stockTree.getRoot();
+    while(tempNode != nullptr || !stack.empty()){
+
+        while(tempNode != nullptr) {
+            stack.push(tempNode);
+            tempNode = tempNode->getLeft();
+        }
+        tempNode = stack.top();
+        stack.pop();
+
+        Stock* tempStock = tempNode->getData();
+
+        y++;
+        if(i % int(std::ceil((double(this->totalAmountOfStocks)/12.0))) == 0){
+            x++;
+            y = 10;
+        }
+
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2) << tempStock->getPrice();
+        std::stringstream ss2;
+        ss2 << std::setw(5) << std::left << tempStock->getTicker() << " ";
+        if(!tempStock->getDelisted()) {
+            ss2 << "$" << std::setw(5) << std::left << std::fixed << std::setprecision(2) << ss.str();
+        } else {
+            ss2 << std::setw(5) << std::left << std::fixed << "DELISTED";
+        }
+
+        int animationTime = 0; //animation time after color hold
+        double animationSpeed = 0; // 0 - 0 // 1 - 1.13 // 3 - 0.12 //
+
+        if(tempStock->getDelisted()){
+            tempText.setFillColor(sf::Color::Red);
+        } else if(tempStock->getBought()+animationTime >= this->timeSinceStart){
+
+            int updateTime = tempStock->getUpdateTime();
+
+            updateTime = int(std::round(updateTime * updateTime * animationSpeed));
+            if(updateTime > 255){
+                updateTime = 255;
+            }
+            tempText.setFillColor(sf::Color(updateTime,255,updateTime));
+            if(tempStock->getSold() != this->timeSinceStart){
+                tempStock->setUpdateTime(tempStock->getUpdateTime()+1);
+            }
+
+            //tempText.setFillColor(sf::Color::Green);
+        } else if(tempStock->getSold()+animationTime >= this->timeSinceStart){
+
+            int updateTime = tempStock->getUpdateTime();
+
+            updateTime = int(std::round(updateTime * updateTime * animationSpeed));
+            if(updateTime > 255){
+                updateTime = 255;
+            }
+            tempText.setFillColor(sf::Color(255,updateTime,updateTime));
+            if(tempStock->getSold() != this->timeSinceStart){
+                tempStock->setUpdateTime(tempStock->getUpdateTime()+1);
+            }
+
+            //tempText.setFillColor(sf::Color::Red);
+        }
+
+
+
+        tempText.setString(ss2.str());
+        tempText.setPosition(160*x, 15*y+offset);
+        this->mainWindow.draw(tempText);
+        i++;
+
+        tempText.setFillColor(sf::Color::White);
+
+        tempNode = tempNode->getRight();
+    }
+
+
+    tempText.setString("Time Elapsed:     " + std::to_string(this->timeSinceStart));
+    tempText.setPosition(10, 15+offset);
+    this->mainWindow.draw(tempText);
+    tempText.setString("Market Update In: " + std::to_string(60 - this->timeSinceStart % 60));
+    tempText.setPosition(10, 30+offset);
+    this->mainWindow.draw(tempText);
+    tempText.setString("Market Sentiment: " + this->event);
+    tempText.setPosition(10, 45+offset);
+    this->mainWindow.draw(tempText);
+    tempText.setString("Delisted Stocks: " + std::to_string(this->delistedStocks));
+    tempText.setPosition(10, 60+offset);
+    this->mainWindow.draw(tempText);
+    tempText.setString("Remaining Stocks: " + std::to_string(this->totalAmountOfStocks-this->delistedStocks));
+    tempText.setPosition(10, 75+offset);
+    this->mainWindow.draw(tempText);
+
+    while(this->mainWindow.pollEvent(windowEvent)){
+
+        if(windowEvent.type == sf::Event::Closed) {
+            this->mainWindow.close();
+            exit(-5);
+        }
+        if(windowEvent.type == sf::Event::MouseWheelScrolled){
+            if (windowEvent.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel){
+                if(windowEvent.mouseWheelScroll.delta > 0 && offset < 0){
+                    this->offset += windowEvent.mouseWheelScroll.delta * 10;
+                } else if(windowEvent.mouseWheelScroll.delta < 0 && offset > -12.3*(std::ceil((double(this->totalAmountOfStocks)/12.0)))){
+                    this->offset += windowEvent.mouseWheelScroll.delta * 10;
+                }
+            }
+        }
+
+    }
+
     this->mainWindow.display();
 }

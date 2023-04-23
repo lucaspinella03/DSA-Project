@@ -11,11 +11,15 @@
 
 class Simulation {
 private:
-    sf::Vector2f res;
+    int timeSinceStart;
+    int minutesPassed;
+    float offset;
+    int delistedStocks = 0;
     sf::RenderWindow mainWindow;
     std::vector<std::string> tickers;
     std::string events[5] = {"bear market","bull market","recession","economic boom","stagnation"};
     int tickersSize;
+    int totalAmountOfStocks;
     LLRBTree stockTree;
     std::string event = "stagnation";
 

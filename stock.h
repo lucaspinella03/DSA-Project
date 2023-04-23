@@ -34,6 +34,13 @@ private:
                             // the total amount of shares being sold at the price
                             // BUYING shares DECREASES the supply
                             // SELLING shares INCREASES the supply
+    int daysTradingBelow1 = 0;
+    bool delisted = false;
+                            //if a stock trades negatively for 30 days, it is DELISTED.
+    int timeWhenBought = -100;
+    int timeWhenSold = -100;
+    int timeSinceUpdate = 0;
+
 public:
     Stock(std::string ticker, std::string outstandingShares, double price);
     Stock();
@@ -45,10 +52,15 @@ public:
     std::string getMarketCap() const;
     int getSupply() const;
 
-    void buyShares(int num);
-    void sellShares(int num);
+    void buyShares(int num, int time);
+    void sellShares(int num, int time);
+    int getBought();
+    int getSold();
+    int getUpdateTime();
+    void setUpdateTime(int num);
+    int getDelisted();
 
-
+    friend class LLRBTNode;
 
 
 };
