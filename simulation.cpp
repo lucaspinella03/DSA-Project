@@ -323,8 +323,7 @@ void Simulation::draw() {
     tempText.setString("Least Expensive Stock: " + ss4.str());
     tempText.setPosition(10, 105+offset);
     this->mainWindow.draw(tempText);
-
-    //TODO Implement more statistics
+    
     while(this->mainWindow.pollEvent(windowEvent)){
 
         if(windowEvent.type == sf::Event::Closed) {
