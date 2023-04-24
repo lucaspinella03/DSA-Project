@@ -17,4 +17,4 @@ the file path should look like this: "C:\SFML"
 - Once the above sections are accounted for, the prgram will prompt the user for an input file which exists on the cmake-build-debug folder.
 - If given a proper file, the program will then give the user the option of adding animations during runtime (this changes the colors to fade in and out).
 - Once the user has entered either 'y' for yes and 'n' for no, the program will open in a window outside the CLion application and the program will run.
-- To terminate the program, hit the top right-most button of the window (the red x).
+- To terminate the program, hit the top right-most button of the window (the button with the red x).
