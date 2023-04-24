@@ -12,7 +12,7 @@
 class Simulation {
 private:
     int timeSinceStart;
-    int minutesPassed;
+    int minutesPassed = 0;
     float offset;
     int delistedStocks = 0;
     sf::RenderWindow mainWindow;
@@ -22,6 +22,8 @@ private:
     int totalAmountOfStocks;
     LLRBTree stockTree;
     std::string event = "stagnation";
+    bool animations;
+
 
     [[noreturn]] void simulation();
     void draw();

@@ -18,7 +18,6 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include <iomanip>
-#include <thread>
 
 Simulation::Simulation() {
 
@@ -33,10 +32,22 @@ Simulation::Simulation() {
         std::cout << "file not found -- please input valid file name" << std::endl;
         std::cout << "file name: ";
         std::cin >> fileName;
-        std::cout << std::endl;
         file.open(fileName);
 
     }
+
+    std::string aniResult;
+    bool incorrect = false;
+    while(aniResult != "y" && aniResult != "n") {
+        if(incorrect) std::cout << "invalid response -- please input either 'y' or 'n' " << std::endl;
+        std::cout << "Animations on (y/n):";
+        std::cin >> aniResult;
+        incorrect = true;
+    }
+
+    if(aniResult == "y") animations = true;
+    else animations = false;
+
     std::string line;
     std::getline(file, line); // burn first line
 
@@ -59,8 +70,8 @@ Simulation::Simulation() {
 
     }
 
-    this->tickersSize = this->tickers.size();
-    this->totalAmountOfStocks = this->tickers.size();
+    this->tickersSize = int(this->tickers.size());
+    this->totalAmountOfStocks = int(this->tickers.size());
 
     this->mainWindow.create(sf::VideoMode(1920, 1080), "Market Simulation");
     this->offset = 0;
@@ -147,7 +158,7 @@ void Simulation::simulation() {
                 }
                 if(listed != tempStock->getDelisted()){
                     this->tickers.erase(this->tickers.begin() + tickerIndex);
-                    this->tickersSize = this->tickers.size();
+                    this->tickersSize = int(this->tickers.size());
                     std::uniform_int_distribution<> tempTickerGen(0, this->tickersSize-1);
                     tickerGen = tempTickerGen;
                     this->delistedStocks++;
@@ -156,71 +167,10 @@ void Simulation::simulation() {
 
             if(timeSinceStart % 60 == 0){ // change event
                 this->minutesPassed++;
-                int eventIndex = 2; //eventGen(randGenerator);
+                int eventIndex = eventGen(randGenerator);
                 this->event = events[eventIndex];
                 //std::cout << events[eventIndex] << std::endl;
 
-                if(this->event == "bear market"){
-                    std::thread audioThread([&](){
-                        sf::SoundBuffer bullish;
-                        if (!bullish.loadFromFile("sounds/chaChing.wav")){
-                            exit(-1);
-                        }
-                        bullish.loadFromFile("sounds/chaChing.wav");
-                        sf::Sound sound;
-                        sound.setBuffer(bullish);
-                        sound.play();
-                        while (sound.getStatus() == sf::Sound::Playing)
-                        {
-                            // Wait for the sound to finish playing
-                        }
-                    });
-                } else if (this->event == "bull market"){
-                    std::thread audioThread([&](){
-                        sf::SoundBuffer bullish;
-                        if (!bullish.loadFromFile("sounds/chaChing.wav")){
-                            exit(-1);
-                        }
-                        bullish.loadFromFile("sounds/chaChing.wav");
-                        sf::Sound sound;
-                        sound.setBuffer(bullish);
-                        sound.play();
-                        while (sound.getStatus() == sf::Sound::Playing)
-                        {
-                            // Wait for the sound to finish playing
-                        }
-                    });
-
-                }else if (this->event == "recession"){ //TODO FIX AUDIO
-                    sf::SoundBuffer bullish;
-                    if (!bullish.loadFromFile("sounds/chaChing.wav")){
-                        exit(-1);
-                    }
-                    bullish.loadFromFile("sounds/chaChing.wav");
-                    sf::Sound sound;
-                    sound.setBuffer(bullish);
-                    std::thread audioThread([&](){
-                        sound.play();
-                    });
-                }else if (this->event == "economic boom"){
-                    sf::SoundBuffer bullish;
-                    if (!bullish.loadFromFile("sounds/chaChing.wav")){
-                        exit(-1);
-                    }
-                    bullish.loadFromFile("sounds/chaChing.wav");
-                    sf::Sound sound;
-                    sound.setBuffer(bullish);
-                    sound.play();
-                } else { //stagnation
-                    sf::SoundBuffer bullish;
-                    if (!bullish.loadFromFile("sounds/chaChing.wav")){
-                        exit(-1);
-                    }
-                    bullish.loadFromFile("sounds/chaChing.wav");
-                    sf::Sound sound;
-                    sound.setBuffer(bullish);
-                    sound.play();
-                }
 
 
 
@@ -245,11 +195,17 @@ void Simulation::draw() {
     std::stack<LLRBTNode*> stack;
     //stack.push(this->stockTree.getRoot());
 
+    // Sounds :D
+
     int x = -1;
     int y = 10;
     int i = 0;
 
+
     LLRBTNode* tempNode = this->stockTree.getRoot();
+
+    Stock lowest = *tempNode->getData();
+    Stock highest = *tempNode->getData();
     while(tempNode != nullptr || !stack.empty()){
 
         while(tempNode != nullptr) {
@@ -267,6 +223,13 @@ void Simulation::draw() {
             y = 10;
         }
 
+        if(tempStock->getPrice() > highest.getPrice()){
+            highest = *tempStock;
+        }
+        if(!tempStock->getDelisted() && tempStock->getPrice() < lowest.getPrice()){
+            lowest = *tempStock;
+        }
+
         std::stringstream ss;
         ss << std::fixed << std::setprecision(2) << tempStock->getPrice();
         std::stringstream ss2;
@@ -277,8 +240,8 @@ void Simulation::draw() {
             ss2 << std::setw(5) << std::left << std::fixed << "DELISTED";
         }
 
-        int animationTime = 0; //animation time after color hold
-        double animationSpeed = 0; // 0 - 0 // 1 - 1.13 // 3 - 0.12 //
+        int animationTime = animations; //animation time after color hold
+        double animationSpeed = animations * 1.13; // 0 - 0 // 1 - 1.13 // 3 - 0.12 //
 
         if(tempStock->getDelisted()){
             tempText.setFillColor(sf::Color::Red);
@@ -315,7 +278,7 @@ void Simulation::draw() {
 
 
         tempText.setString(ss2.str());
-        tempText.setPosition(160*x, 15*y+offset);
+        tempText.setPosition(160.f*float(x), 15.f*float(y)+offset);
         this->mainWindow.draw(tempText);
         i++;
 
@@ -341,6 +304,27 @@ void Simulation::draw() {
     tempText.setPosition(10, 75+offset);
     this->mainWindow.draw(tempText);
 
+    std::stringstream ss1;
+    std::stringstream ss2;
+    std::stringstream ss3;
+    std::stringstream ss4;
+
+    ss1 << std::fixed << std::setprecision(2) << highest.getPrice();
+    ss2 << std::setw(5) << std::left << highest.getTicker() << " ";
+    ss2 << "$" << std::setw(5) << std::left << std::fixed << std::setprecision(2) << ss1.str();
+
+    ss3 << std::fixed << std::setprecision(2) << lowest.getPrice();
+    ss4 << std::setw(5) << std::left << lowest.getTicker() << " ";
+    ss4 << "$" << std::setw(5) << std::left << std::fixed << std::setprecision(2) << ss3.str();
+
+    tempText.setString("Most Expensive Stock:  " + ss2.str());
+    tempText.setPosition(10, 90+offset);
+    this->mainWindow.draw(tempText);
+    tempText.setString("Least Expensive Stock: " + ss4.str());
+    tempText.setPosition(10, 105+offset);
+    this->mainWindow.draw(tempText);
+
+    //TODO Implement more statistics
     while(this->mainWindow.pollEvent(windowEvent)){
 
         if(windowEvent.type == sf::Event::Closed) {
@@ -349,9 +333,7 @@ void Simulation::draw() {
         }
         if(windowEvent.type == sf::Event::MouseWheelScrolled){
             if (windowEvent.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel){
-                if(windowEvent.mouseWheelScroll.delta > 0 && offset < 0){
-                    this->offset += windowEvent.mouseWheelScroll.delta * 10;
-                } else if(windowEvent.mouseWheelScroll.delta < 0 && offset > -12.3*(std::ceil((double(this->totalAmountOfStocks)/12.0)))){
+                if((windowEvent.mouseWheelScroll.delta > 0 && offset < 0) || (windowEvent.mouseWheelScroll.delta < 0 && offset > -12.3*(std::ceil((double(this->totalAmountOfStocks)/12.0))))){
                     this->offset += windowEvent.mouseWheelScroll.delta * 10;
                 }
             }

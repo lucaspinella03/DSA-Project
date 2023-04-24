@@ -1,0 +1,3 @@
+Ticker,Outstanding_Shares,Price
+PFE,500000000000,41.80,
+CSX,100000,12.85

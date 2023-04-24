@@ -79,7 +79,7 @@ void Stock::sellShares(int num, int time) {
 
     if(this->price < 1.00){
         daysTradingBelow1++;
-        if(this->daysTradingBelow1 == 30 || price <= 0){
+        if(this->daysTradingBelow1 == 30 || price <= 0.009){
             delisted = true;
         }
     } else {
